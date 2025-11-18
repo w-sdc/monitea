@@ -1,0 +1,366 @@
+// Level Meter Component for Slint UI
+
+// options for meter orientation
+export enum LevelMeterOrientation {
+  vertical,
+  horizontal,
+}
+
+// Vertical Level Meter Ruler Component
+component LevelMeterRuleVertical inherits Rectangle {
+  in property <color> line-color: grey;
+  in property <color> text-color: grey;
+  in property <string> unit: "";
+  in property<length> font-size: 9px;
+  in property<string> font-family : "";
+  in property<float> peak: 0.0;
+  in property<float> max-level: 10.0;
+  in property<float> min-level: -100.0;
+  in property <int> degree-step: 20;
+  private property <float> total: Math.abs(max-level - min-level);
+  private property <float> cood-height: self.height / 1px;
+  private property <float> peak-position: Math.abs(max-level - peak) / total * cood-height + 1;
+  private property <float> font-step: (cood-height / degree-step) / ((font-size / 1px) * 1.5);
+  private property <int> font-step-deg: 1 / font-step + 1;
+  private property <length> pos-step: self.height / degree-step;
+
+  width: font-size*3+12px;
+  Path {
+    stroke: line-color;
+    stroke-width: 1px;
+    width: 8px;
+    x: font-size*3+2px;
+
+    MoveTo { x: 0; y: 0; }
+    LineTo { x: 7; y: 0; }
+    LineTo { x: 7; y: cood-height - 1; }
+    LineTo { x: 0; y: cood-height - 1; }
+
+    MoveTo { x: 0; y: peak-position; }
+    LineTo { x: 7; y: peak-position; }
+  }
+  Text {
+    text: max-level + (root.unit != "" ? " " + root.unit: "");
+    horizontal-alignment: right;
+    width: font-size*3+2px;
+    font-size: root.font-size;
+    font-family: root.font-family;
+    color: root.text-color;
+    x: 0px;
+    y: 0px;
+  }
+  Text {
+    text: min-level;
+    horizontal-alignment: right;
+    width: font-size*3+2px;
+    font-size: root.font-size;
+    font-family: root.font-family;
+    color: root.text-color;
+    x: 0px;
+    y: root.height - self.font-size;
+  }
+  if max-level != peak && peak-position > font-size / 1px * 1.5: Text {
+    text: root.peak;
+    horizontal-alignment: right;
+    width: font-size*3+2px;
+    font-size: root.font-size;
+    font-family: root.font-family;
+    color: root.text-color;
+    x: 0px;
+    y: peak-position * 1px - self.font-size / 2;
+  }
+  for dg in degree-step : Rectangle {
+    width: font-size*3+12px;
+    if Math.abs(peak-position - dg * cood-height / degree-step) > cood-height / (degree-step * 2) && dg != 0: Path {
+      stroke: line-color;
+      stroke-width: 1px;
+      width: 5px;
+      height: 2px;
+      x: font-size*3+5px;
+      y: dg * pos-step;
+      MoveTo { x: 0; y: 0; }
+      LineTo { x: 4; y: 0; }
+    }
+    if dg * pos-step < peak-position * 1px && dg * font-step > 1 &&
+        dg * pos-step < peak-position * 1px - root.font-size &&
+        Math.mod(dg, font-step-deg) == 0: Text {
+      text: max-level - total / degree-step * dg;
+      horizontal-alignment: right;
+      width: font-size*3+2px;
+      font-size: root.font-size;
+      font-family: root.font-family;
+      color: root.text-color;
+      x: 0px;
+      y: dg * pos-step - self.font-size / 2;
+    }
+    if dg * pos-step > peak-position * 1px + root.font-size && 
+        dg * pos-step < root.height - root.font-size * 1.5 && 
+        Math.mod(dg, font-step-deg) == 0: Text {
+      text: max-level - total / degree-step * dg;
+      horizontal-alignment: right;
+      width: font-size*3+2px;
+      font-size: root.font-size;
+      font-family: root.font-family;
+      color: root.text-color;
+      x: 0px;
+      y: dg * pos-step - self.font-size / 2;
+    }
+  }
+}
+
+// Horizontal Level Meter Ruler Component
+component LevelMeterRuleHorizontal inherits Rectangle {
+  in property <color> line-color: grey;
+  in property <color> text-color: grey;
+  in property <string> unit: "";
+  in property<length> font-size: 9px;
+  in property<string> font-family : "";
+  in property<float> peak: 0.0;
+  in property<float> max-level: 10.0;
+  in property<float> min-level: -100.0;
+  in property <int> degree-step: 20;
+  private property <float> total: Math.abs(max-level - min-level);
+  private property <float> cood-width: self.width / 1px;
+  private property <float> peak-position: self.width / 1px - Math.abs(max-level - peak) / total * cood-width + 1;
+  private property <float> font-step: (cood-width / degree-step) / ((font-size / 1px) * 3.5);
+  private property <int> font-step-deg: 1 / font-step + 1;
+  private property <length> pos-step: self.width / degree-step;
+
+  height: font-size+12px;
+  Path {
+    stroke: line-color;
+    stroke-width: 1px;
+    height: 8px;
+    y: font-size+2px;
+
+    MoveTo { y: 0; x: 0; }
+    LineTo { y: 7; x: 0; }
+    LineTo { y: 7; x: cood-width - 1; }
+    LineTo { y: 0; x: cood-width - 1; }
+
+    MoveTo { y: 0; x: peak-position; }
+    LineTo { y: 7; x: peak-position; }
+  }
+  Text {
+    text: max-level + (root.unit != "" ? " " + root.unit: "");
+    horizontal-alignment: right;
+    width: font-size*3+2px;
+    font-size: root.font-size;
+    font-family: root.font-family;
+    color: root.text-color;
+    y: 0px;
+    x: root.width - self.font-size*3 - 2px;
+  }
+  Text {
+    text: min-level;
+    horizontal-alignment: left;
+    width: font-size*3+2px;
+    font-size: root.font-size;
+    font-family: root.font-family;
+    color: root.text-color;
+    y: 0px;
+    x: 0px;
+  }
+  if max-level != peak && cood-width - peak-position > font-size / 1px * 3.5: Text {
+    text: root.peak;
+    horizontal-alignment: center;
+    width: font-size*3+2px;
+    font-size: root.font-size;
+    font-family: root.font-family;
+    color: root.text-color;
+    y: 0px;
+    x: peak-position * 1px - self.font-size * 1.5;
+  }
+  for dg in degree-step : Rectangle {
+    height: font-size+12px;
+    if Math.abs(peak-position - dg * cood-width / degree-step) > cood-width / (degree-step * 2) && dg != 0: Path {
+      stroke: line-color;
+      stroke-width: 1px;
+      width: 2px;
+      height: 5px;
+      y: font-size+5px;
+      x: dg * pos-step;
+      MoveTo { y: 0; x: 0; }
+      LineTo { y: 4; x: 0; }
+    }
+    if dg * pos-step > peak-position * 1px && dg * font-step > 1 &&
+        dg * pos-step < root.width - root.font-size * 5 &&
+        Math.mod(dg, font-step-deg) == 0: Text {
+      text: max-level - total / degree-step * dg;
+      horizontal-alignment: center;
+      width: font-size*3+2px;
+      font-size: root.font-size;
+      font-family: root.font-family;
+      color: root.text-color;
+      y: 0px;
+      x: dg * pos-step - self.font-size * 1.5;
+    }
+    if dg * pos-step < peak-position * 1px - root.font-size * 1.5 &&
+        dg * pos-step > root.font-size * 3.5 &&
+        dg * pos-step < root.width - root.font-size * 3.5 &&
+        Math.mod(dg, font-step-deg) == 0: Text {
+      text: max-level - total / degree-step * dg;
+      horizontal-alignment: center;
+      width: font-size*3+2px;
+      font-size: root.font-size;
+      font-family: root.font-family;
+      color: root.text-color;
+      y: 0px;
+      x: dg * pos-step - self.font-size * 1.5;
+    }
+  }
+}
+
+// Main Level Meter Component
+export component LevelMeter inherits Rectangle {
+  in property<[float]> levels: [-30.0, 20.0, 0.0, -10.0];
+  in property<float> peak: 0.0;
+  in property<float> max-level: 10.0;
+  in property<float> min-level: -90.0;
+  in property<color> low-color: green;
+  in property<color> mid-color: yellow;
+  in property<color> high-color: red;
+  in property <color> background-color: black;
+  in property<bool> show-peak: true;
+  in property<LevelMeterOrientation> orientation : LevelMeterOrientation.horizontal;
+  in property<length> font-size: 9px;
+  in property<string> font-family: "";
+  in property<color> text-color: grey;
+  in property<color> line-color: grey;
+  in property<length> meter-border-width: 1px;
+  in property<color> meter-border-color: darkolivegreen;
+  in property<length> meter-spacing: 1px;
+  in property<string> unit: "dB";
+  in property<bool> show-ruler: true;
+  in property <int> degree-step: 20;
+  in-out property <[bool]> peak-hold: [true, true];
+  private property <length> vertical-view-height: self.height - meter-border-width * 2 - (show-peak? 3px:0px);
+  private property <length> horizontal-view-width: self.width - meter-border-width * 2 - (show-peak? 3px:0px);
+  private property <float> total: Math.abs(max-level - min-level);
+  private property <float> peak-percent: Math.abs(peak - min-level) / total;
+  callback clicked();
+
+  states [
+    vertical when orientation == LevelMeterOrientation.vertical: {
+      min-height: meter-border-width * 2 + (show-peak? 3px:0px) + 60px;
+      min-width: (levels.length * 1px) + ((levels.length - 1) * meter-spacing) + (meter-border-width * 2) + (show-ruler? font-size*3+12px:0px);
+    }
+    horizontal when orientation == LevelMeterOrientation.horizontal: {
+      min-width: meter-border-width * 2 + (show-peak? 3px:0px) + 80px;
+      min-height: (levels.length * 1px) + ((levels.length - 1) * meter-spacing) + (meter-border-width * 2) + (show-ruler? font-size+12px:0px);
+    }
+  ]
+  if show-ruler && orientation == LevelMeterOrientation.vertical : LevelMeterRuleVertical {
+    y: meter-border-width * 2 + (show-peak? 3px:0px);
+    x: 0px;
+    height: root.height - (meter-border-width * 2) - (show-peak? 3px:0px);
+    width: font-size*3+12px;
+    peak: root.peak;
+    max-level: root.max-level;
+    min-level: root.min-level;
+    line-color: line-color;
+    text-color: text-color;
+    font-size: font-size;
+    font-family: font-family;
+    degree-step: degree-step;
+    unit: unit;
+  } 
+  if show-ruler && orientation == LevelMeterOrientation.horizontal : LevelMeterRuleHorizontal {
+    x: meter-border-width;
+    y: 0px;
+    width: root.width - (meter-border-width * 2) - (show-peak? 3px:0px);
+    height: font-size+12px;
+    peak: root.peak;
+    max-level: root.max-level;
+    min-level: root.min-level;
+    line-color: line-color;
+    text-color: text-color;
+    font-size: font-size;
+    font-family: font-family;
+    degree-step: degree-step;
+    unit: unit;
+  }
+
+  if orientation == LevelMeterOrientation.vertical: Rectangle {
+    x: show-ruler ? font-size*3+12px : 0px;
+    y: 0px;
+    width: root.width - (show-ruler ? font-size*3+12px : 0px);
+    height: parent.height;
+    border-width: meter-border-width;
+    border-color: meter-border-color;
+    background: background-color;
+    for lvidx in levels.length : Rectangle {
+      width: (parent.width - meter-border-width * 2) / levels.length - ((levels.length - 1) * meter-spacing) / levels.length;
+      x: lvidx * (parent.width / levels.length) + meter-border-width;
+      if show-peak && peak-hold[lvidx]: Rectangle {
+        width: parent.width;
+        height: 2px;
+        y: meter-border-width;
+        background: high-color;
+      }
+      Rectangle {
+        height: (levels[lvidx] - min-level) / total < 1 ? (levels[lvidx] - min-level) / total * vertical-view-height : vertical-view-height;
+        y: parent.height - self.height - meter-border-width;
+        clip: true;
+        Rectangle {
+          width: parent.width;
+          height: vertical-view-height;
+          y: parent.height - self.height;
+          background: @linear-gradient(0deg, low-color 0%, mid-color 50%, high-color peak-percent);
+        }
+      }
+    }
+    TouchArea {
+      clicked => {
+        root.clicked()
+      }
+    }
+  }
+  if orientation == LevelMeterOrientation.horizontal: Rectangle {
+    x: 0px;
+    y: show-ruler ? font-size+12px : 0px;
+    width: root.width;
+    height: root.height - (show-ruler ? font-size+12px : 0px);
+    border-width: meter-border-width;
+    border-color: meter-border-color;
+    background: background-color;
+    for lvidx in levels.length : Rectangle {
+      height: (parent.height - meter-border-width * 2) / levels.length - ((levels.length - 1) * meter-spacing) / levels.length;
+      y: lvidx * (parent.height / levels.length) + meter-border-width;
+      if show-peak && peak-hold[lvidx]: Rectangle {
+        height: parent.height;
+        width: 2px;
+        x: parent.width - 2px - meter-border-width;
+        background: high-color;
+      }
+      Rectangle {
+        width: (levels[lvidx] - min-level) / total < 1 ? (levels[lvidx] - min-level) / total * horizontal-view-width : horizontal-view-width;
+        x: meter-border-width;
+        clip: true;
+        Rectangle {
+          x: 0px;
+          width: horizontal-view-width;
+          height: parent.height;
+          background: @linear-gradient(90deg, low-color 0%, mid-color 50%, high-color peak-percent);
+        }
+      }
+    }
+    TouchArea {
+      clicked => {
+        root.clicked()
+      }
+    }
+  }
+}
+
+component Test inherits Rectangle {
+    Rectangle {
+      x: 10px;
+      y: 10px;
+      width: root.width - 20px;
+      height: root.height - 20px;
+      LevelMeter {
+          orientation: LevelMeterOrientation.horizontal;
+      }
+    }
+}

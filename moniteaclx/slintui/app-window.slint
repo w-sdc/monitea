@@ -1,0 +1,66 @@
+import {Button, Slider, VerticalBox} from "std-widgets.slint";
+
+export struct TMember  {
+    name: string,
+    description: string,
+    gain: int,
+}
+
+export component MainWindow inherits Window {
+    in property <[TMember]> members;
+    callback update_ctrl(string, int);
+    callback add_member();
+    callback close();
+    preferred-width: 500px;
+    preferred-height: 300px;
+    min-width: 300px;
+    min-height:200px;
+    MenuBar {
+        Menu {
+            title: "Operations";
+            MenuItem {
+                title: "Config";
+            }
+            MenuSeparator {}
+            MenuItem {
+                title: "Exit";
+                activated => {
+                    root.close();
+                }
+            }
+        }
+        Menu {
+            title: "Help";
+            MenuItem {
+                title: "About";
+            }
+        }
+    }
+    VerticalBox {
+        Text {
+            text: "Test UI";
+        }
+        VerticalBox {
+          for m in members : VerticalBox {
+            Text {
+              text: m.name;
+            }
+            Text {
+              text: m.description;
+            }
+            Slider {
+              value: m.gain;
+              changed(value) => {
+                update_ctrl(m.name, value);
+              }
+            }
+          }
+        }
+        Button {
+            text: "Add Member";
+            clicked => {
+                root.add_member();
+            }
+        }
+    }
+}
