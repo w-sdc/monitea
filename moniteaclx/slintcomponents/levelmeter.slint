@@ -214,15 +214,17 @@ component LevelMeterRuleHorizontal inherits Rectangle {
 // Main Level Meter Component
 export component LevelMeter inherits Rectangle {
   in property<[float]> levels: [-30.0, 20.0, 0.0, -10.0];
+  in-out property <[bool]> peak-hold: [true, true];
   in property<float> peak: 0.0;
   in property<float> max-level: 10.0;
   in property<float> min-level: -90.0;
+  in property<bool> show-peak: true;
+  in property<bool> show-ruler: true;
+  in property<LevelMeterOrientation> orientation : LevelMeterOrientation.horizontal;
   in property<color> low-color: green;
   in property<color> mid-color: yellow;
   in property<color> high-color: red;
   in property <color> background-color: black;
-  in property<bool> show-peak: true;
-  in property<LevelMeterOrientation> orientation : LevelMeterOrientation.horizontal;
   in property<length> font-size: 9px;
   in property<string> font-family: "";
   in property<color> text-color: grey;
@@ -230,10 +232,8 @@ export component LevelMeter inherits Rectangle {
   in property<length> meter-border-width: 1px;
   in property<color> meter-border-color: darkolivegreen;
   in property<length> meter-spacing: 1px;
-  in property<string> unit: "dB";
-  in property<bool> show-ruler: true;
+  in property<string> unit: "";
   in property <int> degree-step: 20;
-  in-out property <[bool]> peak-hold: [true, true];
   private property <length> vertical-view-height: self.height - meter-border-width * 2 - (show-peak? 3px:0px);
   private property <length> horizontal-view-width: self.width - meter-border-width * 2 - (show-peak? 3px:0px);
   private property <float> total: Math.abs(max-level - min-level);
@@ -251,7 +251,7 @@ export component LevelMeter inherits Rectangle {
     }
   ]
   if show-ruler && orientation == LevelMeterOrientation.vertical : LevelMeterRuleVertical {
-    y: meter-border-width * 2 + (show-peak? 3px:0px);
+    y: meter-border-width + (show-peak? 3px:0px);
     x: 0px;
     height: root.height - (meter-border-width * 2) - (show-peak? 3px:0px);
     width: font-size*3+12px;
@@ -290,8 +290,9 @@ export component LevelMeter inherits Rectangle {
     border-color: meter-border-color;
     background: background-color;
     for lvidx in levels.length : Rectangle {
-      width: (parent.width - meter-border-width * 2) / levels.length - ((levels.length - 1) * meter-spacing) / levels.length;
-      x: lvidx * (parent.width / levels.length) + meter-border-width;
+      border-width: 0px;
+      width: (parent.width - meter-border-width - (levels.length - 1) * meter-spacing) / levels.length;
+      x: lvidx * (parent.width - meter-border-width) / levels.length + meter-border-width;
       if show-peak && peak-hold[lvidx]: Rectangle {
         width: parent.width;
         height: 2px;
@@ -300,10 +301,15 @@ export component LevelMeter inherits Rectangle {
       }
       Rectangle {
         height: (levels[lvidx] - min-level) / total < 1 ? (levels[lvidx] - min-level) / total * vertical-view-height : vertical-view-height;
+        animate height {
+             duration: 100ms;
+             easing: ease-out-sine;
+        }
         y: parent.height - self.height - meter-border-width;
+        border-width: 0px;
+        width: parent.width + (meter-spacing > 0px ? 0px : 1px); // to fix Reactagle clip spacing
         clip: true;
         Rectangle {
-          width: parent.width;
           height: vertical-view-height;
           y: parent.height - self.height;
           background: @linear-gradient(0deg, low-color 0%, mid-color 50%, high-color peak-percent);
@@ -325,8 +331,9 @@ export component LevelMeter inherits Rectangle {
     border-color: meter-border-color;
     background: background-color;
     for lvidx in levels.length : Rectangle {
-      height: (parent.height - meter-border-width * 2) / levels.length - ((levels.length - 1) * meter-spacing) / levels.length;
-      y: lvidx * (parent.height / levels.length) + meter-border-width;
+      border-width: 0px;
+      height: (parent.height - meter-border-width - (levels.length - 1) * meter-spacing) / levels.length;
+      y: lvidx * (parent.height - meter-border-width) / levels.length + meter-border-width;
       if show-peak && peak-hold[lvidx]: Rectangle {
         height: parent.height;
         width: 2px;
@@ -335,7 +342,12 @@ export component LevelMeter inherits Rectangle {
       }
       Rectangle {
         width: (levels[lvidx] - min-level) / total < 1 ? (levels[lvidx] - min-level) / total * horizontal-view-width : horizontal-view-width;
+        animate width {
+             duration: 100ms;
+             easing: ease-out-sine;
+        }
         x: meter-border-width;
+        height: parent.height + (meter-spacing > 0px ? 0px : 1px); // to fix Reactagle clip spacing
         clip: true;
         Rectangle {
           x: 0px;
@@ -351,16 +363,4 @@ export component LevelMeter inherits Rectangle {
       }
     }
   }
-}
-
-component Test inherits Rectangle {
-    Rectangle {
-      x: 10px;
-      y: 10px;
-      width: root.width - 20px;
-      height: root.height - 20px;
-      LevelMeter {
-          orientation: LevelMeterOrientation.horizontal;
-      }
-    }
 }

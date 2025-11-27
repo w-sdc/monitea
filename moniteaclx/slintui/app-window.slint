@@ -1,9 +1,224 @@
-import {Button, Slider, VerticalBox} from "std-widgets.slint";
+import { Button, Slider, VerticalBox, ScrollView, SpinBox, Spinner } from "std-widgets.slint";
+import { LevelMeter } from "../slintcomponents/lib.slint";
 
-export struct TMember  {
-    name: string,
-    description: string,
+// Levelmeter info
+export struct TChannelMeter {
+    levels: [float],
+    peak_flag: [bool],
+}
+
+// Channel info
+export struct TChannel {
     gain: int,
+    mute: bool,
+    dev_id: int,
+    meter: TChannelMeter,
+}
+
+// Meeting member info
+export struct TMemberInfo {
+    site: int,
+    name: string,
+    avatar: image,
+    description: string,
+}
+
+// Meeting member instance
+export struct TMember  {
+    info: TMemberInfo,
+    channel: TChannel,
+}
+
+// Connect state
+export enum TSelfConnectState  {
+  disconnected,
+  connecting,
+  connected,
+}
+
+// Work mode
+export enum TSelfMode {
+  master,
+  voicer,
+}
+
+// Self plane info
+export struct TSelfPlane {
+    info: TMemberInfo,
+    mode: TSelfMode,
+    channel_master: TMember,
+    channel_voice: TChannel,
+    channel_devout: TChannel,
+    connect_state: TSelfConnectState,
+}
+
+
+export component AppSuf inherits Rectangle {
+  in property <TSelfPlane> self_plane : {
+    info: {
+      site: -1,
+      name: "Local User X",
+      avatar: @image-url("./resources/icon-default-user.png"),
+      description: "User Description",
+    },
+    mode: TSelfMode.master,
+    channel_master: {
+      info:{
+        site: -1,
+        name: "Local User X",
+        avatar: @image-url("./resources/icon-default-user.png"),
+        description: "TUser Description",
+      },
+      channel: {
+        gain: 100,
+        mute: false,
+        dev_id: 0,
+        meter: {
+          levels: [0.0, -10.0],
+          peak_flag: [true, false],
+        },
+      },
+    },
+    channel_voice: {
+      gain: 50,
+      mute: false,
+      dev_id: 1,
+      meter: {
+        levels: [-50.0, -50.0],
+        peak_flag: [false, false],
+      },
+    },
+    channel_devout: {
+      gain: 50,
+      mute: false,
+      dev_id: 2,
+      meter: {
+        levels: [-20.0, -30.0],
+        peak_flag: [false, false],
+      },
+    },
+    connect_state: TSelfConnectState.disconnected,
+  };
+  in property <[TMember]> members : [{
+      info:{
+        site: 1,
+        name: "Remote User A",
+        avatar: @image-url("./resources/icon-default-user.png"),
+        description: "Remote User A Description",
+      },
+      channel: {
+        gain: 80,
+        mute: false,
+        dev_id: 3,
+        meter: {
+          levels: [-5.0, -15.0],
+          peak_flag: [true, false],
+        },
+      },
+    },
+    {
+      info:{
+        site: 2,
+        name: "Remote User B",
+        avatar: @image-url("./resources/icon-default-user.png"),
+        description: "Remote User B Description",
+      },
+      channel: {
+        gain: 60,
+        mute: false,
+        dev_id: 4,
+        meter: {
+          levels: [-30.0, -40.0],
+          peak_flag: [false, false],
+        },
+      },
+  }];
+  in property <[string]> inputdevs : ["no device", "Microphone 1", "Microphone 2"];
+  in property <[string]> outputdevs : ["no device", "Speaker 1", "Speaker 2"];
+
+  
+  // Body aria
+  Rectangle {
+    VerticalLayout {
+      // Self Plane
+      VerticalLayout {
+        min-height: 300px;
+        min-width: 300px;
+        // Header aria (login, connect status and so on)
+        Rectangle {
+          height: 40px;
+          Rectangle {
+            x: 15px;
+            width: 32px;
+            height: 32px;
+            clip: true;
+            Image {
+              source: self_plane.info.avatar;
+              width: parent.width;
+              height: parent.height;
+            }
+          }
+          Text {
+            font-size: 16px;
+            font-family: "Sans Serif";
+            text: self_plane.info.name;
+            x: 52px;
+            y: 5px;
+          }
+          Text {
+            font-size: 11px;
+            font-family: "Sans Serif";
+            text: self_plane.info.description;
+            x: 52px;
+            y: 24px;
+          }
+          // show connect button when disconnected
+          if (self_plane.connect_state == TSelfConnectState.disconnected): Button {
+              text: "Connect";
+              width: 90px;
+              x: parent.width - 100px;
+              y: 10px;
+            }
+          // show connecting status when connecting
+          if (self_plane.connect_state == TSelfConnectState.connecting): Rectangle {
+              x: parent.width - 130px;
+              y: 10px;
+              width: 130px;
+              height: 30px;
+              Text {
+                text: "Connecting...";
+                font-size: 12px;
+                font-family: "Sans Serif";
+                horizontal-alignment: right;
+                width: 80px;
+                x: 0px;
+              }
+              Spinner {
+                x: 90px;
+                y: 0px;
+                width: 30px;
+                height: 30px;
+                indeterminate: false;
+              }
+            }
+          // show disconnect button when connected
+          if (self_plane.connect_state == TSelfConnectState.connected): Button {
+              text: "Disconnect";
+              width: 90px;
+              x: parent.width - 100px;
+              y: 10px;
+          }
+        }
+      }
+      // Members List
+      ScrollView {
+        GridLayout {}
+      }
+    }
+  }
+  // Footer aria (status, hints and so on)
+  Rectangle {
+  }
 }
 
 export component MainWindow inherits Window {
@@ -43,16 +258,21 @@ export component MainWindow inherits Window {
         VerticalBox {
           for m in members : VerticalBox {
             Text {
-              text: m.name;
+              text: m.info.name;
             }
             Text {
-              text: m.description;
+              text: m.info.description;
             }
             Slider {
-              value: m.gain;
+              value: m.channel.gain;
               changed(value) => {
-                update_ctrl(m.name, value);
+                update_ctrl(m.info.name, value);
               }
+            }
+            LevelMeter {
+              height: 30px;
+              levels: [0.0, -10.0];
+              orientation: horizontal;
             }
           }
         }
