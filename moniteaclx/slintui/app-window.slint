@@ -1,4 +1,4 @@
-import { Button, Slider, VerticalBox, ScrollView, SpinBox, Spinner } from "std-widgets.slint";
+import { Button, Slider, VerticalBox, ScrollView, SpinBox, Spinner, TabWidget } from "std-widgets.slint";
 import { LevelMeter } from "../slintcomponents/lib.slint";
 
 // Levelmeter info
@@ -52,22 +52,95 @@ export struct TSelfPlane {
     connect_state: TSelfConnectState,
 }
 
+// A avatar button
+component AvatarButton inherits Rectangle {
+    in property <image> avatar_image : @image-url("./resources/icon-default-user.png");
+    callback clicked();
+    width: 44px;
+    height: 44px;
+    border-width: 2px;
+    border-color: #888;
+    border-radius: 22px;
+    clip: true;
+    Image {
+        source: avatar_image;
+        width: parent.width;
+        height: parent.height;
+    }
+    TouchArea {
+      clicked => {
+          root.clicked();
+      }
+    }
+}
 
+// A customizable color button
+component ColorButton {
+  in property <string> text : "Button";
+  in property <length> border-radius : 4px;
+  in property <length> border-width : 2px;
+  in property <color> border-color : #444;
+  in property <color> text-color : #aaa;
+  in property <color> background-color : #444;
+  in property <color> hover-text-color : #fff;
+  in property <color> hover-background-color : #666;
+  in property <color> hover-border-color : #333;
+
+  callback clicked();
+  private property <bool> is_hovered : false;
+
+  width: 100px;
+  height: 30px;
+  Rectangle {
+    border-color: root.is_hovered ? root.hover-border-color : root.border-color;
+    border-width: 2px;
+    border-radius: 4px;
+    background: root.is_hovered ? root.hover-background-color : root.background-color;
+    Text {
+        x: parent.border-width;
+        y: parent.border-width;
+        text: root.text;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        width: parent.width - parent.border-width * 2;
+        height: parent.height - parent.border-width * 2;
+        color: root.is_hovered ? root.hover-text-color : root.text-color;
+    }
+    TouchArea {
+      moved() => {
+          root.is_hovered = self.has-hover;
+      }
+      clicked => {
+        root.clicked();
+      }
+    } 
+  }
+}
+
+component LocalChannelCtrl inherits Rectangle {
+    
+}
+
+component RemoteChannelCtrl inherits Rectangle {
+
+}
+
+//
 export component AppSuf inherits Rectangle {
   in property <TSelfPlane> self_plane : {
     info: {
       site: -1,
-      name: "Local User X",
+      name: "New Moniters Meeting",
       avatar: @image-url("./resources/icon-default-user.png"),
-      description: "User Description",
+      description: "Meeting description",
     },
     mode: TSelfMode.master,
     channel_master: {
       info:{
         site: -1,
-        name: "Local User X",
+        name: "New Moniters Meeting",
         avatar: @image-url("./resources/icon-default-user.png"),
-        description: "TUser Description",
+        description: "Meeting description",
       },
       channel: {
         gain: 100,
@@ -147,37 +220,58 @@ export component AppSuf inherits Rectangle {
         // Header aria (login, connect status and so on)
         Rectangle {
           height: 40px;
-          Rectangle {
+          AvatarButton {
             x: 15px;
-            width: 32px;
-            height: 32px;
-            clip: true;
-            Image {
-              source: self_plane.info.avatar;
-              width: parent.width;
-              height: parent.height;
+            y: 6px;
+            avatar_image: self_plane.info.avatar;
+            width: 34px;
+            height: 34px;
+            border-radius: 16px;
+            border-color: #888;
+            clicked => {
+              // Handle avatar click
             }
           }
-          Text {
-            font-size: 16px;
-            font-family: "Sans Serif";
-            text: self_plane.info.name;
+          Rectangle {
             x: 52px;
-            y: 5px;
-          }
-          Text {
-            font-size: 11px;
-            font-family: "Sans Serif";
-            text: self_plane.info.description;
-            x: 52px;
-            y: 24px;
+            y: 10px;
+            clip: true;
+            width: parent.width - 182px;
+            Text {
+              font-size: 14px;
+              font-family: "Sans Serif";
+              text: self_plane.info.name;
+              color: #aaa;
+              states [
+                  nodesc when self_plane.info.description == "" :{
+                    y: 5px;
+                  }
+                  desc when self_plane.info.description != "" :{
+                    y: 0px;
+                  }
+              ]
+              x: 0px;
+            }
+            if self_plane.info.description != "": Text {
+                font-size: 11px;
+                font-family: "Sans Serif";
+                text: self_plane.info.description;
+                color: #666;
+                x: 0px;
+                y: 17px;
+              }
           }
           // show connect button when disconnected
-          if (self_plane.connect_state == TSelfConnectState.disconnected): Button {
+          if (self_plane.connect_state == TSelfConnectState.disconnected): ColorButton {
               text: "Connect";
               width: 90px;
+              height: 26px;
               x: parent.width - 100px;
               y: 10px;
+              text-color: #fff;
+              background-color: #50A070;
+              hover-background-color: #408060;
+              clicked => {}
             }
           // show connecting status when connecting
           if (self_plane.connect_state == TSelfConnectState.connecting): Rectangle {
@@ -202,12 +296,20 @@ export component AppSuf inherits Rectangle {
               }
             }
           // show disconnect button when connected
-          if (self_plane.connect_state == TSelfConnectState.connected): Button {
+          if (self_plane.connect_state == TSelfConnectState.connected): ColorButton {
               text: "Disconnect";
               width: 90px;
+              height: 26px;
               x: parent.width - 100px;
               y: 10px;
+              text-color: #fff;
+              background-color: #A05050;
+              hover-background-color: #806060;
+              clicked => {}
           }
+        }
+        // Control aria (mode switch, devices select and so on)
+        Rectangle {
         }
       }
       // Members List
