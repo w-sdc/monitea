@@ -10,7 +10,7 @@ slint::include_modules!();
 fn main() -> Result<(), Box<dyn Error>> {
     let mw = MainWindow::new()?;
 
-    let membs = Rc::new(VecModel::from(vec![
+    /*let membs = Rc::new(VecModel::from(vec![
         TMember {
             name: "One".into(),
             description: "the one desc".into(),
@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             description: "new desc".into(),
             gain: 50,
         });
-    });
+    });*/
     mw.on_close({
         move || {
             quit_event_loop().unwrap();

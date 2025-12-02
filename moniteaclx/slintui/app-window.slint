@@ -1,4 +1,4 @@
-import { Button, Slider, VerticalBox, ScrollView, SpinBox, Spinner, TabWidget } from "std-widgets.slint";
+import { Button, Slider, VerticalBox, ScrollView, SpinBox, Spinner, TabWidget, ComboBox } from "std-widgets.slint";
 import { LevelMeter } from "../slintcomponents/lib.slint";
 
 // Levelmeter info
@@ -36,6 +36,12 @@ export enum TSelfConnectState  {
   connected,
 }
 
+export enum TRemoteMasterState {
+  idle,
+  connecting,
+  moinitoring,
+}
+
 // Work mode
 export enum TSelfMode {
   master,
@@ -46,7 +52,8 @@ export enum TSelfMode {
 export struct TSelfPlane {
     info: TMemberInfo,
     mode: TSelfMode,
-    channel_master: TMember,
+    master_info: TMemberInfo,
+    channel_master: TChannel,
     channel_voice: TChannel,
     channel_devout: TChannel,
     connect_state: TSelfConnectState,
@@ -87,69 +94,372 @@ component ColorButton {
   in property <color> hover-border-color : #333;
 
   callback clicked();
-  private property <bool> is_hovered : false;
 
   width: 100px;
   height: 30px;
-  Rectangle {
-    border-color: root.is_hovered ? root.hover-border-color : root.border-color;
-    border-width: 2px;
-    border-radius: 4px;
-    background: root.is_hovered ? root.hover-background-color : root.background-color;
-    Text {
-        x: parent.border-width;
-        y: parent.border-width;
-        text: root.text;
-        horizontal-alignment: center;
-        vertical-alignment: center;
-        width: parent.width - parent.border-width * 2;
-        height: parent.height - parent.border-width * 2;
-        color: root.is_hovered ? root.hover-text-color : root.text-color;
+  TouchArea {
+    mouse-cursor: pointer;
+    clicked => {
+      root.clicked();
     }
-    TouchArea {
-      moved() => {
-          root.is_hovered = self.has-hover;
-      }
-      clicked => {
-        root.clicked();
-      }
-    } 
+    
+    Rectangle {
+      private property <bool> has-hover : parent.has-hover;
+      border-color: has-hover ? root.hover-border-color : root.border-color;
+      border-width: 2px;
+      border-radius: 4px;
+      background: has-hover ? root.hover-background-color : root.background-color;
+      Text {
+          x: parent.border-width;
+          y: parent.border-width;
+          text: root.text;
+          horizontal-alignment: center;
+          vertical-alignment: center;
+          width: parent.width - parent.border-width * 2;
+          height: parent.height - parent.border-width * 2;
+          color: parent.has-hover ? root.hover-text-color : root.text-color;
+      } 
+    }
   }
 }
 
+// A mini checkbox component
+component MiniCheckbox inherits Rectangle {
+  in property <string> text : "Check";
+  in-out property <bool> checked : false;
+  in property <bool> rightalign : false;
+  in property <length> font-size : 11px;
+  in property <string> font-family : "Sans Serif";
+  in property <color> front-color : #ccc;
+  in property <color> checked-color : #B66;
+  callback toggled(bool);
+
+  HorizontalLayout {
+    alignment: parent.rightalign ? end : start;
+    spacing: 2px;
+    if rightalign : Text {
+      text: root.text;
+      y: 1px;
+      horizontal-alignment: rightalign ? right : left;
+      font-size: font-size;
+      font-family: font-family;
+      color: front-color;
+    }
+    Rectangle {
+      width: root.font-size + 2px;
+      height: root.font-size + 2px;
+      border-color: front-color;
+      border-width: 2px;
+      background: checked ? checked-color : transparent;
+      TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+          root.checked = !root.checked;
+          root.toggled(root.checked);
+        }
+      }
+    }
+    if !rightalign: Text {
+      text: root.text;
+      y: 1px;
+      horizontal-alignment: rightalign ? right : left;
+      font-size: font-size;
+      font-family: font-family;
+      color: front-color;
+    }
+  }
+}
+
+// Prototype for channel control
+component ProtoChannelCtrl inherits Rectangle {
+  in property <string> title : "Channel";
+  in property <[string]> devs : ["no device"];
+  in property <float> max-gain : 40.0;
+  in property <float> min-gain : -60.0;
+  in property <float> max-level-meter : 10.0;
+  in property <float> min-level-meter : -110.0;
+  in-out property <TChannel> channel : {
+    gain: 0,
+    mute: false,
+    dev_id: 0,
+    meter: {
+      levels: [-10.0, -30.0],
+      peak_flag: [false, false],
+    },
+  };
+
+  callback mute_change(bool);
+  callback gain_change(int);
+  callback dev_change(float);
+
+  preferred-width: 300px;
+  preferred-height: 100px;
+
+  Text {
+    text: title;
+    font-size: 11px;
+    font-family: "Sans Serif";
+    color: #dc8;
+    width: 120px;
+    x: 8px;
+    y: 5px;
+  }
+
+  Path {
+    x: 5px;
+    y: 21px;
+    width: parent.width - 10px;
+    height: 1px;
+    stroke: #666;
+    stroke-width: 1px;
+    MoveTo { x: 0; y: 0; }
+    LineTo { x: (parent.width / 1px); y: 0; }
+  }
+
+  Text {
+    text: "(Gain: " + channel.gain + " dB)";
+    font-size: 11px;
+    font-family: "Sans Serif";
+    color: #888;
+    horizontal-alignment: right;
+    vertical-alignment: center;
+    width: 90px;
+    x: parent.width - 150px;
+    y: 5px;
+  }
+
+  MiniCheckbox {
+    text: "Mute";
+    checked: channel.mute;
+    height: 20px;
+    x: parent.width - self.width - 7px;
+    y: 5px;
+    rightalign: true;
+    toggled() => {
+      channel.mute = self.checked;
+      root.mute_change(self.checked);
+    }
+  }
+
+  Slider {
+    x: 160px;
+    y: 32px;
+    width: parent.width - 165px;
+    minimum: 0;
+    maximum: (max-gain - min-gain);
+    value: 0 - min-gain;
+    changed(value) => {
+      let gain_value: int = value + min-gain;
+      root.channel.gain = gain_value;
+      root.gain_change(gain_value);
+    }
+  }
+
+  LevelMeter {
+    height: parent.height - 70px > 35px ? parent.height - 70px : 35px;
+    width: parent.width - 16px;
+    y: 60px;
+    x: 8px;
+    levels: channel.meter.levels;
+    max-level: max-level-meter;
+    min-level: min-level-meter;
+    degree-step: (max-level-meter - min-level-meter) / 10; 
+    orientation: horizontal;
+  }
+}
+
+// Local channel controller component
 component LocalChannelCtrl inherits Rectangle {
-    
+  in property <string> title : "Channel";
+  in property <[string]> devs : ["no device"];
+  in property <bool> inprogress : false;
+  in property <float> max-gain : 40.0;
+  in property <float> min-gain : -60.0;
+  in property <float> max-level-meter : 10.0;
+  in property <float> min-level-meter : -110.0;
+  in-out property <TChannel> channel : {
+    gain: 0,
+    mute: false,
+    dev_id: 0,
+    meter: {
+      levels: [-10.0, -30.0],
+      peak_flag: [false, false],
+    },
+  };
+
+  callback mute_change(bool);
+  callback gain_change(int);
+  callback dev_change(float);
+
+  ProtoChannelCtrl {
+    title: root.title;
+    devs: root.devs;
+    max-gain: root.max-gain;
+    min-gain: root.min-gain;
+    max-level-meter: root.max-level-meter;
+    min-level-meter: root.min-level-meter;
+    channel: root.channel;
+    mute_change(v) => {
+        root.mute_change(v);
+    }
+    gain_change(v) => {
+        root.gain_change(v);
+    }
+    dev_change(v) => {
+        root.dev_change(v);
+    }
+    if inprogress : Spinner {
+        x: 40px;
+        y: 27px;
+        width: 30px;
+        height: 30px;
+        indeterminate: true;
+    }
+    if !inprogress : Rectangle {
+        x: 10px;
+        y: 27px;
+        width: 40px;
+        height: 30px;
+        Text {
+            text: "Device:";
+            font-size: 12px;
+            font-family: "Sans Serif";
+            color: #aaa;
+            horizontal-alignment: right;
+            vertical-alignment: center;
+            width: parent.width;
+            height: parent.height;
+        }
+        ComboBox {
+          x:43px;
+          width: 100px;
+          model: devs;
+          current-index: root.channel.dev_id;
+          selected() => {
+            root.channel.dev_id = self.current-index;
+            root.dev_change(self.current-index);
+          }
+        }
+    }
+  }
 }
 
+// Remote channel controller component
 component RemoteChannelCtrl inherits Rectangle {
+  in property <string> title : "Channel";
+  in property <TRemoteMasterState> state : TRemoteMasterState.idle;
+  in property <float> max-gain : 40.0;
+  in property <float> min-gain : -60.0;
+  in property <float> max-level-meter : 10.0;
+  in property <float> min-level-meter : -110.0;
+  in property <TMemberInfo> member : {
+    site: -1,
+    name: "Remote User",
+    avatar: @image-url("./resources/icon-default-user.png"),
+    description: "Remote User Description",
+  };
+  in-out property <TChannel> channel : {
+    gain: 0,
+    mute: false,
+    dev_id: -1,
+    meter: {
+      levels: [-10.0, -30.0],
+      peak_flag: [false, false],
+    },
+  };
 
+  callback mute_change(bool);
+  callback gain_change(int);
+  ProtoChannelCtrl {
+    title: root.title;
+    max-gain: root.max-gain;
+    min-gain: root.min-gain;
+    max-level-meter: root.max-level-meter;
+    min-level-meter: root.min-level-meter;
+    channel: root.channel;
+    mute_change(v) => {
+        root.mute_change(v);
+    }
+    gain_change(v) => {
+        root.gain_change(v);
+    }
+    if state == TRemoteMasterState.idle : Rectangle {
+        x: 10px;
+        y: 27px;
+        width: 140px;
+        height: 30px;
+
+        Text {
+          text: "No Connection";
+          font-size: 14px;
+          font-family: "Sans Serif";
+          color: #966;
+          vertical-alignment: center;
+          horizontal-alignment: center;
+          width: parent.width;
+          height: parent.height;
+        }
+    }
+    if state == TRemoteMasterState.connecting : Spinner {
+        x: 10px;
+        y: 27px;
+        width: 30px;
+        height: 30px;
+        indeterminate: true;
+    }
+    if state == TRemoteMasterState.moinitoring : Rectangle {
+        x: 20px;
+        y: 27px;
+        width: 140px;
+        height: 30px;
+
+        AvatarButton {
+            x: 0px;
+            y: 0px;
+            avatar_image: member.avatar;
+            width: 28px;
+            height: 28px;
+            border-radius: 15px;
+            border-color: #888;
+        }
+
+        Text {
+          x: 32px;
+          text: member.name;
+          font-size: 14px;
+          font-family: "Sans Serif";
+          color: #aaa;
+          vertical-alignment: center;
+          width: parent.width - 38px;
+          height: parent.height;
+        }
+    }
+  }
 }
 
-//
+// Main surface component for App window
 export component AppSuf inherits Rectangle {
-  in property <TSelfPlane> self_plane : {
+  in-out property <TSelfPlane> self_plane : {
     info: {
       site: -1,
       name: "New Moniters Meeting",
       avatar: @image-url("./resources/icon-default-user.png"),
       description: "Meeting description",
     },
-    mode: TSelfMode.master,
+    mode: TSelfMode.voicer,
+    master_info: {
+      site: -1,
+      name: "New Moniters Meeting",
+      avatar: @image-url("./resources/icon-default-user.png"),
+      description: "Meeting description",
+    },
     channel_master: {
-      info:{
-        site: -1,
-        name: "New Moniters Meeting",
-        avatar: @image-url("./resources/icon-default-user.png"),
-        description: "Meeting description",
-      },
-      channel: {
-        gain: 100,
-        mute: false,
-        dev_id: 0,
-        meter: {
-          levels: [0.0, -10.0],
-          peak_flag: [true, false],
-        },
+      gain: 100,
+      mute: false,
+      dev_id: 0,
+      meter: {
+        levels: [0.0, -10.0],
+        peak_flag: [true, false],
       },
     },
     channel_voice: {
@@ -172,7 +482,7 @@ export component AppSuf inherits Rectangle {
     },
     connect_state: TSelfConnectState.disconnected,
   };
-  in property <[TMember]> members : [{
+  in-out property <[TMember]> members : [{
       info:{
         site: 1,
         name: "Remote User A",
@@ -212,11 +522,14 @@ export component AppSuf inherits Rectangle {
   
   // Body aria
   Rectangle {
+    width: parent.width > 700px ? 700px : parent.width;
     VerticalLayout {
+      min-width: 320px;
+      max-width: 700px;
       // Self Plane
       VerticalLayout {
-        min-height: 300px;
-        min-width: 300px;
+        height: 352px;
+        spacing: 4px;
         // Header aria (login, connect status and so on)
         Rectangle {
           height: 40px;
@@ -309,7 +622,50 @@ export component AppSuf inherits Rectangle {
           }
         }
         // Control aria (mode switch, devices select and so on)
-        Rectangle {
+        if self_plane.mode == TSelfMode.master : LocalChannelCtrl {
+          title: "Master Channel";
+          devs: inputdevs;
+          channel: self_plane.channel_master;
+          mute_change(v) => {}
+          gain_change(v) => {}
+          dev_change(v) => {}
+        }
+        if self_plane.mode == TSelfMode.voicer : RemoteChannelCtrl {
+          title: "Master - Remote";
+          state: TRemoteMasterState.idle;
+          member: self_plane.master_info;
+          channel: self_plane.channel_master;
+          mute_change(v) => {}
+          gain_change(v) => {}
+        }
+        LocalChannelCtrl {
+          title: "Voice Sender";
+          devs: inputdevs;
+          channel: self_plane.channel_voice;
+          mute_change(v) => {}
+          gain_change(v) => {}
+          dev_change(v) => {}
+        }
+        LocalChannelCtrl {
+          title: "Output";
+          devs: outputdevs;
+          channel: self_plane.channel_devout;
+          mute_change(v) => {}
+          gain_change(v) => {}
+          dev_change(v) => {}
+        }
+      }
+      Path {
+        height: 12px;
+        stroke: #666;
+        stroke-width: 2px;
+        MoveTo {
+          x: 0;
+          y: 6;
+        }
+        LineTo {
+          x: (parent.width / 1px);
+          y: 6;
         }
       }
       // Members List
@@ -326,12 +682,12 @@ export component AppSuf inherits Rectangle {
 export component MainWindow inherits Window {
     in property <[TMember]> members;
     callback update_ctrl(string, int);
-    callback add_member();
     callback close();
     preferred-width: 500px;
-    preferred-height: 300px;
-    min-width: 300px;
-    min-height:200px;
+    preferred-height: 350px;
+    min-width: 320px;
+    min-height:500px;
+    max-width: 700px;
     MenuBar {
         Menu {
             title: "Operations";
@@ -353,36 +709,6 @@ export component MainWindow inherits Window {
             }
         }
     }
-    VerticalBox {
-        Text {
-            text: "Test UI";
-        }
-        VerticalBox {
-          for m in members : VerticalBox {
-            Text {
-              text: m.info.name;
-            }
-            Text {
-              text: m.info.description;
-            }
-            Slider {
-              value: m.channel.gain;
-              changed(value) => {
-                update_ctrl(m.info.name, value);
-              }
-            }
-            LevelMeter {
-              height: 30px;
-              levels: [0.0, -10.0];
-              orientation: horizontal;
-            }
-          }
-        }
-        Button {
-            text: "Add Member";
-            clicked => {
-                root.add_member();
-            }
-        }
+    AppSuf {
     }
 }
