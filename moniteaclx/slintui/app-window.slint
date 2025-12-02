@@ -110,12 +110,12 @@ component ColorButton {
       border-radius: 4px;
       background: has-hover ? root.hover-background-color : root.background-color;
       Text {
-          x: parent.border-width;
+          x: parent.border-width + 5px;
           y: parent.border-width;
           text: root.text;
           horizontal-alignment: center;
           vertical-alignment: center;
-          width: parent.width - parent.border-width * 2;
+          width: parent.width - parent.border-width * 2 - 10px;
           height: parent.height - parent.border-width * 2;
           color: parent.has-hover ? root.hover-text-color : root.text-color;
       } 
@@ -178,6 +178,7 @@ component ProtoChannelCtrl inherits Rectangle {
   in property <float> min-gain : -60.0;
   in property <float> max-level-meter : 10.0;
   in property <float> min-level-meter : -110.0;
+  in property <bool> hide_gain : false;
   in-out property <TChannel> channel : {
     gain: 0,
     mute: false,
@@ -206,11 +207,11 @@ component ProtoChannelCtrl inherits Rectangle {
   }
 
   Path {
-    x: 5px;
+    x: 10px;
     y: 21px;
-    width: parent.width - 10px;
+    width: parent.width - 80px;
     height: 1px;
-    stroke: #666;
+    stroke: #444;
     stroke-width: 1px;
     MoveTo { x: 0; y: 0; }
     LineTo { x: (parent.width / 1px); y: 0; }
@@ -241,13 +242,13 @@ component ProtoChannelCtrl inherits Rectangle {
     }
   }
 
-  Slider {
+  if !hide_gain: Slider {
     x: 160px;
     y: 32px;
     width: parent.width - 165px;
     minimum: 0;
     maximum: (max-gain - min-gain);
-    value: 0 - min-gain;
+    value: channel.gain - min-gain;
     changed(value) => {
       let gain_value: int = value + min-gain;
       root.channel.gain = gain_value;
@@ -274,9 +275,10 @@ component LocalChannelCtrl inherits Rectangle {
   in property <[string]> devs : ["no device"];
   in property <bool> inprogress : false;
   in property <float> max-gain : 40.0;
-  in property <float> min-gain : -60.0;
+  in property <float> min-gain : -100.0;
   in property <float> max-level-meter : 10.0;
   in property <float> min-level-meter : -110.0;
+  in-out property <bool> select_mode : false;
   in-out property <TChannel> channel : {
     gain: 0,
     mute: false,
@@ -299,6 +301,7 @@ component LocalChannelCtrl inherits Rectangle {
     max-level-meter: root.max-level-meter;
     min-level-meter: root.min-level-meter;
     channel: root.channel;
+    hide_gain: select_mode;
     mute_change(v) => {
         root.mute_change(v);
     }
@@ -318,28 +321,43 @@ component LocalChannelCtrl inherits Rectangle {
     if !inprogress : Rectangle {
         x: 10px;
         y: 27px;
-        width: 40px;
+        width: select_mode ? parent.width - 20px : 150px;
         height: 30px;
-        Text {
+        if !select_mode: Text {
+            x: 0px;
             text: "Device:";
             font-size: 12px;
             font-family: "Sans Serif";
             color: #aaa;
             horizontal-alignment: right;
             vertical-alignment: center;
-            width: parent.width;
+            width: 55px;
             height: parent.height;
         }
-        ComboBox {
-          x:43px;
-          width: 100px;
+        if select_mode: ComboBox {
+          x:0px;
+          width: parent.width;
           model: devs;
           current-index: root.channel.dev_id;
           selected() => {
             root.channel.dev_id = self.current-index;
+            root.select_mode = false;
             root.dev_change(self.current-index);
           }
         }
+        if !select_mode: ColorButton {
+          x: 60px;
+          width: parent.width -60px;
+          height: 26px;
+          text: devs[channel.dev_id];
+          text-color: #fff;
+          background-color: #444;
+          hover-background-color: #666;
+          clicked => {
+            root.select_mode = true;
+          }
+        }
+        
     }
   }
 }
@@ -349,7 +367,7 @@ component RemoteChannelCtrl inherits Rectangle {
   in property <string> title : "Channel";
   in property <TRemoteMasterState> state : TRemoteMasterState.idle;
   in property <float> max-gain : 40.0;
-  in property <float> min-gain : -60.0;
+  in property <float> min-gain : -100.0;
   in property <float> max-level-meter : 10.0;
   in property <float> min-level-meter : -110.0;
   in property <TMemberInfo> member : {
@@ -454,7 +472,7 @@ export component AppSuf inherits Rectangle {
       description: "Meeting description",
     },
     channel_master: {
-      gain: 100,
+      gain: 0,
       mute: false,
       dev_id: 0,
       meter: {
@@ -463,7 +481,7 @@ export component AppSuf inherits Rectangle {
       },
     },
     channel_voice: {
-      gain: 50,
+      gain: 0,
       mute: false,
       dev_id: 1,
       meter: {
@@ -472,7 +490,7 @@ export component AppSuf inherits Rectangle {
       },
     },
     channel_devout: {
-      gain: 50,
+      gain: 0,
       mute: false,
       dev_id: 2,
       meter: {
@@ -490,7 +508,7 @@ export component AppSuf inherits Rectangle {
         description: "Remote User A Description",
       },
       channel: {
-        gain: 80,
+        gain: 0,
         mute: false,
         dev_id: 3,
         meter: {
@@ -683,8 +701,8 @@ export component MainWindow inherits Window {
     in property <[TMember]> members;
     callback update_ctrl(string, int);
     callback close();
-    preferred-width: 500px;
-    preferred-height: 350px;
+    preferred-width: 350px;
+    preferred-height: 500px;
     min-width: 320px;
     min-height:500px;
     max-width: 700px;
