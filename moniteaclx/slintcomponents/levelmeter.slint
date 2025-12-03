@@ -17,7 +17,7 @@ component LevelMeterRuleVertical inherits Rectangle {
   in property<float> max-level: 10.0;
   in property<float> min-level: -100.0;
   in property <int> degree-step: 20;
-  in property <int> pricision: 0;
+  in property <int> precision: 0;
   private property <float> total: Math.abs(max-level - min-level);
   private property <float> cood-height: self.height / 1px;
   private property <float> peak-position: Math.abs(max-level - peak) / total * cood-height + 1;
@@ -41,7 +41,7 @@ component LevelMeterRuleVertical inherits Rectangle {
     LineTo { x: 7; y: peak-position; }
   }
   Text {
-    text: max-level.to_fixed(pricision) + (root.unit != "" ? " " + root.unit: "");
+    text: max-level.to_fixed(precision) + (root.unit != "" ? " " + root.unit: "");
     horizontal-alignment: right;
     width: font-size*3+2px;
     font-size: root.font-size;
@@ -51,7 +51,7 @@ component LevelMeterRuleVertical inherits Rectangle {
     y: 0px;
   }
   Text {
-    text: min-level.to_fixed(pricision);
+    text: min-level.to_fixed(precision);
     horizontal-alignment: right;
     width: font-size*3+2px;
     font-size: root.font-size;
@@ -61,7 +61,7 @@ component LevelMeterRuleVertical inherits Rectangle {
     y: root.height - self.font-size;
   }
   if max-level != peak && peak-position > font-size / 1px * 1.5: Text {
-    text: root.peak.to_fixed(pricision);
+    text: root.peak.to_fixed(precision);
     horizontal-alignment: right;
     width: font-size*3+2px;
     font-size: root.font-size;
@@ -85,7 +85,7 @@ component LevelMeterRuleVertical inherits Rectangle {
     if dg * pos-step < peak-position * 1px && dg * font-step > 1 &&
         dg * pos-step < peak-position * 1px - root.font-size &&
         Math.mod(dg, font-step-deg) == 0: Text {
-      text: (max-level - total / degree-step * dg).to_fixed(pricision);
+      text: (max-level - total / degree-step * dg).to_fixed(precision);
       horizontal-alignment: right;
       width: font-size*3+2px;
       font-size: root.font-size;
@@ -97,7 +97,7 @@ component LevelMeterRuleVertical inherits Rectangle {
     if dg * pos-step > peak-position * 1px + root.font-size && 
         dg * pos-step < root.height - root.font-size * 1.5 && 
         Math.mod(dg, font-step-deg) == 0: Text {
-      text: (max-level - total / degree-step * dg).to_fixed(pricision);
+      text: (max-level - total / degree-step * dg).to_fixed(precision);
       horizontal-alignment: right;
       width: font-size*3+2px;
       font-size: root.font-size;
@@ -120,7 +120,7 @@ component LevelMeterRuleHorizontal inherits Rectangle {
   in property<float> max-level: 10.0;
   in property<float> min-level: -100.0;
   in property <int> degree-step: 20;
-  in property <int> pricision: 0;
+  in property <int> precision: 0;
   private property <float> total: Math.abs(max-level - min-level);
   private property <float> cood-width: self.width / 1px;
   private property <float> peak-position: self.width / 1px - Math.abs(max-level - peak) / total * cood-width + 1;
@@ -144,7 +144,7 @@ component LevelMeterRuleHorizontal inherits Rectangle {
     LineTo { y: 7; x: peak-position; }
   }
   Text {
-    text: max-level.to_fixed(pricision) + (root.unit != "" ? " " + root.unit: "");
+    text: max-level.to_fixed(precision) + (root.unit != "" ? " " + root.unit: "");
     horizontal-alignment: right;
     width: font-size*3+2px;
     font-size: root.font-size;
@@ -154,7 +154,7 @@ component LevelMeterRuleHorizontal inherits Rectangle {
     x: root.width - self.font-size*3 - 2px;
   }
   Text {
-    text: min-level.to_fixed(pricision);
+    text: min-level.to_fixed(precision);
     horizontal-alignment: left;
     width: font-size*3+2px;
     font-size: root.font-size;
@@ -164,7 +164,7 @@ component LevelMeterRuleHorizontal inherits Rectangle {
     x: 0px;
   }
   if max-level != peak && cood-width - peak-position > font-size / 1px * 3.5: Text {
-    text: root.peak.to_fixed(pricision);
+    text: root.peak.to_fixed(precision);
     horizontal-alignment: center;
     width: font-size*3+2px;
     font-size: root.font-size;
@@ -188,7 +188,7 @@ component LevelMeterRuleHorizontal inherits Rectangle {
     if dg * pos-step > peak-position * 1px && dg * font-step > 1 &&
         dg * pos-step < root.width - root.font-size * 5 &&
         Math.mod(dg, font-step-deg) == 0: Text {
-      text: (min-level + total / degree-step * dg).to_fixed(pricision);
+      text: (min-level + total / degree-step * dg).to_fixed(precision);
       horizontal-alignment: center;
       width: font-size*3+2px;
       font-size: root.font-size;
@@ -201,7 +201,7 @@ component LevelMeterRuleHorizontal inherits Rectangle {
         dg * pos-step > root.font-size * 3.5 &&
         dg * pos-step < root.width - root.font-size * 3.5 &&
         Math.mod(dg, font-step-deg) == 0: Text {
-      text: (min-level + total / degree-step * dg).to_fixed(pricision);
+      text: (min-level + total / degree-step * dg).to_fixed(precision);
       horizontal-alignment: center;
       width: font-size*3+2px;
       font-size: root.font-size;
@@ -216,7 +216,7 @@ component LevelMeterRuleHorizontal inherits Rectangle {
 // Main Level Meter Component
 export component LevelMeter inherits Rectangle {
   in property<[float]> levels: [-30.0, 20.0, 0.0, -10.0];
-  in-out property <[bool]> peak-hold: [true, true];
+  in property <[bool]> peak-hold: [true, true];
   in property<float> peak: 0.0;
   in property<float> max-level: 10.0;
   in property<float> min-level: -90.0;
@@ -234,7 +234,7 @@ export component LevelMeter inherits Rectangle {
   in property<length> meter-border-width: 1px;
   in property<color> meter-border-color: darkolivegreen;
   in property<length> meter-spacing: 1px;
-  in property <int> pricision: 0;
+  in property <int> precision: 0;
   in property<string> unit: "";
   in property <int> degree-step: 20;
   private property <length> vertical-view-height: self.height - meter-border-width * 2 - (show-peak? 3px:0px);
@@ -266,7 +266,7 @@ export component LevelMeter inherits Rectangle {
     font-size: font-size;
     font-family: font-family;
     degree-step: degree-step;
-    pricision: pricision;
+    precision: precision;
     unit: unit;
   } 
   if show-ruler && orientation == LevelMeterOrientation.horizontal : LevelMeterRuleHorizontal {
@@ -282,7 +282,7 @@ export component LevelMeter inherits Rectangle {
     font-size: font-size;
     font-family: font-family;
     degree-step: degree-step;
-    pricision: pricision;
+    precision: precision;
     unit: unit;
   }
 
