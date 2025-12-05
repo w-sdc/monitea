@@ -3,30 +3,30 @@ import { LevelMeter } from "../slintcomponents/lib.slint";
 
 // Levelmeter info
 export struct TChannelMeter {
-    levels: [float],
-    peak_flag: [bool],
+  levels: [float],
+  peak_flag: [bool],
 }
 
 // Channel info
 export struct TChannel {
-    gain: int,
-    mute: bool,
-    dev_id: int,
-    meter: TChannelMeter,
+  gain: int,
+  mute: bool,
+  dev_id: int,
+  meter: TChannelMeter,
 }
 
 // Meeting member info
 export struct TMemberInfo {
-    site: int,
-    name: string,
-    avatar: image,
-    description: string,
+  site: int,
+  name: string,
+  avatar: image,
+  description: string,
 }
 
 // Meeting member instance
 export struct TMember  {
-    info: TMemberInfo,
-    channel: TChannel,
+  info: TMemberInfo,
+  channel: TChannel,
 }
 
 // Connect state
@@ -50,35 +50,35 @@ export enum TSelfMode {
 
 // Self plane info
 export struct TSelfPlane {
-    info: TMemberInfo,
-    mode: TSelfMode,
-    master_info: TMemberInfo,
-    channel_master: TChannel,
-    channel_voice: TChannel,
-    channel_devout: TChannel,
-    connect_state: TSelfConnectState,
+  info: TMemberInfo,
+  mode: TSelfMode,
+  master_info: TMemberInfo,
+  channel_master: TChannel,
+  channel_voice: TChannel,
+  channel_devout: TChannel,
+  connect_state: TSelfConnectState,
 }
 
 // A avatar button
 component AvatarButton inherits Rectangle {
-    in property <image> avatar_image : @image-url("./resources/icon-default-user.png");
-    callback clicked();
-    width: 44px;
-    height: 44px;
-    border-width: 2px;
-    border-color: #888;
-    border-radius: 22px;
-    clip: true;
-    Image {
-        source: avatar_image;
-        width: parent.width;
-        height: parent.height;
+  in property <image> avatar_image : @image-url("./resources/icon-default-user.png");
+  callback clicked();
+  width: 44px;
+  height: 44px;
+  border-width: 2px;
+  border-color: #888;
+  border-radius: 22px;
+  clip: true;
+  Image {
+      source: avatar_image;
+      width: parent.width;
+      height: parent.height;
+  }
+  TouchArea {
+    clicked => {
+        root.clicked();
     }
-    TouchArea {
-      clicked => {
-          root.clicked();
-      }
-    }
+  }
 }
 
 // A customizable color button
@@ -110,14 +110,14 @@ component ColorButton {
       border-radius: 4px;
       background: has-hover ? root.hover-background-color : root.background-color;
       Text {
-          x: parent.border-width + 5px;
-          y: parent.border-width;
-          text: root.text;
-          horizontal-alignment: center;
-          vertical-alignment: center;
-          width: parent.width - parent.border-width * 2 - 10px;
-          height: parent.height - parent.border-width * 2;
-          color: parent.has-hover ? root.hover-text-color : root.text-color;
+        x: parent.border-width + 5px;
+        y: parent.border-width;
+        text: root.text;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        width: parent.width - parent.border-width * 2 - 10px;
+        height: parent.height - parent.border-width * 2;
+        color: parent.has-hover ? root.hover-text-color : root.text-color;
       } 
     }
   }
@@ -179,6 +179,7 @@ component ProtoChannelCtrl inherits Rectangle {
   in property <float> max-level-meter : 10.0;
   in property <float> min-level-meter : -110.0;
   in property <bool> hide_gain : false;
+  in property <bool> hide_mute : false;
   in-out property <TChannel> channel : {
     gain: 0,
     mute: false,
@@ -225,11 +226,11 @@ component ProtoChannelCtrl inherits Rectangle {
     horizontal-alignment: right;
     vertical-alignment: center;
     width: 90px;
-    x: parent.width - 150px;
+    x: parent.width - (hide_mute ? 120px : 150px);
     y: 5px;
   }
 
-  MiniCheckbox {
+  if !hide_mute: MiniCheckbox {
     text: "Mute";
     checked: channel.mute;
     height: 20px;
@@ -278,6 +279,7 @@ component LocalChannelCtrl inherits Rectangle {
   in property <float> min-gain : -100.0;
   in property <float> max-level-meter : 10.0;
   in property <float> min-level-meter : -110.0;
+  in property <bool> hide_mute : false;
   in-out property <bool> select_mode : false;
   in-out property <TChannel> channel : {
     gain: 0,
@@ -302,62 +304,62 @@ component LocalChannelCtrl inherits Rectangle {
     min-level-meter: root.min-level-meter;
     channel: root.channel;
     hide_gain: select_mode;
+    hide_mute: root.hide_mute;
     mute_change(v) => {
-        root.mute_change(v);
+      root.mute_change(v);
     }
     gain_change(v) => {
-        root.gain_change(v);
+      root.gain_change(v);
     }
     dev_change(v) => {
-        root.dev_change(v);
+      root.dev_change(v);
     }
     if inprogress : Spinner {
-        x: 40px;
-        y: 27px;
-        width: 30px;
-        height: 30px;
-        indeterminate: true;
+      x: 40px;
+      y: 27px;
+      width: 30px;
+      height: 30px;
+      indeterminate: true;
     }
     if !inprogress : Rectangle {
-        x: 10px;
-        y: 27px;
-        width: select_mode ? parent.width - 20px : 150px;
-        height: 30px;
-        if !select_mode: Text {
-            x: 0px;
-            text: "Device:";
-            font-size: 12px;
-            font-family: "Sans Serif";
-            color: #aaa;
-            horizontal-alignment: right;
-            vertical-alignment: center;
-            width: 55px;
-            height: parent.height;
+      x: 10px;
+      y: 27px;
+      width: select_mode ? parent.width - 20px : 150px;
+      height: 30px;
+      if !select_mode: Text {
+        x: 0px;
+        text: "Device:";
+        font-size: 12px;
+        font-family: "Sans Serif";
+        color: #aaa;
+        horizontal-alignment: right;
+        vertical-alignment: center;
+        width: 55px;
+        height: parent.height;
+      }
+      if select_mode: ComboBox {
+        x:0px;
+        width: parent.width;
+        model: devs;
+        current-index: root.channel.dev_id;
+        selected() => {
+          root.channel.dev_id = self.current-index;
+          root.select_mode = false;
+          root.dev_change(self.current-index);
         }
-        if select_mode: ComboBox {
-          x:0px;
-          width: parent.width;
-          model: devs;
-          current-index: root.channel.dev_id;
-          selected() => {
-            root.channel.dev_id = self.current-index;
-            root.select_mode = false;
-            root.dev_change(self.current-index);
-          }
+      }
+      if !select_mode: ColorButton {
+        x: 60px;
+        width: parent.width -60px;
+        height: 26px;
+        text: devs[channel.dev_id];
+        text-color: #fff;
+        background-color: #444;
+        hover-background-color: #666;
+        clicked => {
+          root.select_mode = true;
         }
-        if !select_mode: ColorButton {
-          x: 60px;
-          width: parent.width -60px;
-          height: 26px;
-          text: devs[channel.dev_id];
-          text-color: #fff;
-          background-color: #444;
-          hover-background-color: #666;
-          clicked => {
-            root.select_mode = true;
-          }
-        }
-        
+      }
     }
   }
 }
@@ -370,6 +372,7 @@ component RemoteChannelCtrl inherits Rectangle {
   in property <float> min-gain : -100.0;
   in property <float> max-level-meter : 10.0;
   in property <float> min-level-meter : -110.0;
+  in property <bool> hide_mute : false;
   in property <TMemberInfo> member : {
     site: -1,
     name: "Remote User",
@@ -395,6 +398,7 @@ component RemoteChannelCtrl inherits Rectangle {
     max-level-meter: root.max-level-meter;
     min-level-meter: root.min-level-meter;
     channel: root.channel;
+    hide_mute: root.hide_mute;
     mute_change(v) => {
         root.mute_change(v);
     }
@@ -402,57 +406,125 @@ component RemoteChannelCtrl inherits Rectangle {
         root.gain_change(v);
     }
     if state == TRemoteMasterState.idle : Rectangle {
-        x: 10px;
-        y: 27px;
-        width: 140px;
-        height: 30px;
+      x: 10px;
+      y: 27px;
+      width: 140px;
+      height: 30px;
 
-        Text {
-          text: "No Connection";
-          font-size: 14px;
-          font-family: "Sans Serif";
-          color: #966;
-          vertical-alignment: center;
-          horizontal-alignment: center;
-          width: parent.width;
-          height: parent.height;
-        }
+      Text {
+        text: "No Connection";
+        font-size: 14px;
+        font-family: "Sans Serif";
+        color: #966;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+        width: parent.width;
+        height: parent.height;
+      }
     }
     if state == TRemoteMasterState.connecting : Spinner {
-        x: 10px;
-        y: 27px;
-        width: 30px;
-        height: 30px;
-        indeterminate: true;
+      x: 10px;
+      y: 27px;
+      width: 30px;
+      height: 30px;
+      indeterminate: true;
     }
     if state == TRemoteMasterState.moinitoring : Rectangle {
-        x: 20px;
-        y: 27px;
-        width: 140px;
-        height: 30px;
+      x: 20px;
+      y: 27px;
+      width: 140px;
+      height: 30px;
 
-        AvatarButton {
-            x: 0px;
-            y: 0px;
-            avatar_image: member.avatar;
-            width: 28px;
-            height: 28px;
-            border-radius: 15px;
-            border-color: #888;
-        }
+      AvatarButton {
+        x: 0px;
+        y: 0px;
+        avatar_image: member.avatar;
+        width: 28px;
+        height: 28px;
+        border-radius: 15px;
+        border-color: #888;
+      }
 
-        Text {
-          x: 32px;
-          text: member.name;
-          font-size: 14px;
-          font-family: "Sans Serif";
-          color: #aaa;
-          vertical-alignment: center;
-          width: parent.width - 38px;
-          height: parent.height;
-        }
+      Text {
+        x: 32px;
+        text: member.name;
+        font-size: 14px;
+        font-family: "Sans Serif";
+        color: #aaa;
+        vertical-alignment: center;
+        width: parent.width - 38px;
+        height: parent.height;
+      }
     }
   }
+}
+
+component MemberCtrl inherits Rectangle {
+  in property <TMember> member : {
+    info:{
+      site: 1,
+      name: "Remote User A",
+      avatar: @image-url("./resources/icon-default-user.png"),
+      description: "Remote User A Description",
+    },
+    channel: {
+      gain: 0,
+      mute: false,
+      dev_id: 0,
+      meter: {
+        levels: [-5.0],
+      },
+    },
+  };
+
+  border-radius: 10px;
+  border-width: 2px;
+  border-color: #444;
+  preferred-height: 290px;
+  height: 56px;
+
+  LevelMeter {
+    x: 15px;
+    y: 10px;
+    width: 6px;
+    height: 36px;
+    levels: member.channel.meter.levels;
+    max-level: 10.0;
+    min-level: -110.0;
+    orientation: vertical;
+    show-ruler: false;
+    show-peak: false;
+  }
+
+  AvatarButton {
+    x: 30px;
+    y: 10px;
+    avatar_image: member.info.avatar;
+    width: 36px;
+    height: 36px;
+    border-radius: 30px;
+    border-color: #888;
+  }
+
+  Text {
+    x: 76px;
+    y: member.info.description != "" ? 12px : 18px;
+    text: member.info.name;
+    font-size: 14px;
+    font-family: "Sans Serif";
+    color: #aaa;
+    width: parent.width - 86px;
+  }
+  if member.info.description != "": Text {
+      x: 76px;
+      y: 30px;
+      text: member.info.description;
+      font-size: 11px;
+      font-family: "Sans Serif";
+      color: #666;
+      width: parent.width - 86px;
+    }
+
 }
 
 // Main surface component for App window
@@ -485,8 +557,8 @@ export component AppSuf inherits Rectangle {
       mute: false,
       dev_id: 1,
       meter: {
-        levels: [-50.0, -50.0],
-        peak_flag: [false, false],
+        levels: [-50.0],
+        peak_flag: [false],
       },
     },
     channel_devout: {
@@ -510,10 +582,10 @@ export component AppSuf inherits Rectangle {
       channel: {
         gain: 0,
         mute: false,
-        dev_id: 3,
+        dev_id: 0,
         meter: {
-          levels: [-5.0, -15.0],
-          peak_flag: [true, false],
+          levels: [-5.0],
+          peak_flag: [true],
         },
       },
     },
@@ -527,16 +599,52 @@ export component AppSuf inherits Rectangle {
       channel: {
         gain: 60,
         mute: false,
-        dev_id: 4,
+        dev_id: 0,
         meter: {
-          levels: [-30.0, -40.0],
-          peak_flag: [false, false],
+          levels: [-30.0],
+          peak_flag: [false],
         },
       },
-  }];
+    },
+    {
+      info:{
+        site: 3,
+        name: "Remote User C",
+        avatar: @image-url("./resources/icon-default-user.png"),
+        description: "",
+      },
+      channel: {
+        gain: -10,
+        mute: true,
+        dev_id: 0,
+        meter: {
+          levels: [-80.0],
+          peak_flag: [false],
+        },
+      },
+    },
+    {
+      info:{
+        site: 4,
+        name: "Remote User D",
+        avatar: @image-url("./resources/icon-default-user.png"),
+        description: "Remote User D Description",
+      },
+      channel: {
+        gain: 20,
+        mute: false,
+        dev_id: 0,
+        meter: {
+          levels: [-15.0],
+          peak_flag: [true],
+        },
+      },
+    }
+  ];
   in property <[string]> inputdevs : ["no device", "Microphone 1", "Microphone 2"];
   in property <[string]> outputdevs : ["no device", "Speaker 1", "Speaker 2"];
-
+  
+  private property <bool> mview_split : self.width > 500px; // members view split mode
   
   // Body aria
   Rectangle {
@@ -688,7 +796,24 @@ export component AppSuf inherits Rectangle {
       }
       // Members List
       ScrollView {
-        GridLayout {}
+        vertical-scrollbar-policy: as-needed;
+        horizontal-scrollbar-policy: always-off;
+        viewport-height: (mview_split ? Math.ceil(members.length/2) * 61px : members.length * 61px) + 5px;
+        for idx in members.length : MemberCtrl {
+          states [
+            split when mview_split : {
+              x: (Math.mod(idx, 2) * (parent.width / 2)) + 5px;
+              y: Math.floor(idx / 2) * (self.height + 5px) + 5px;
+              width: (parent.width / 2 - 10px);
+            }
+            single when !mview_split : {
+              x: 5px;
+              y: idx * (self.height + 5px) + 5px;
+              width: (parent.width - 10px);
+            }
+          ]
+          member: members[idx];
+        }
       }
     }
   }
